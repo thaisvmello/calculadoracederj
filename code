@@ -1,0 +1,73 @@
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Calculadora de notas CEDERJ');
+}
+
+function calcularNotas(ad1, ap1, ad2, ap2, ap3) {
+  function toNumber(value) {
+    if (typeof value === 'string') {
+      return Math.max(0, parseFloat(value.replace(',', '.')) || 0);
+    }
+    return Math.max(0, parseFloat(value) || 0);
+  }
+
+  function roundToOne(num) {
+    return Math.round((num + Number.EPSILON) * 10) / 10;
+  }
+
+  ad1 = toNumber(ad1);
+  ap1 = toNumber(ap1);
+  ad2 = toNumber(ad2);
+  ap2 = toNumber(ap2);
+  ap3 = toNumber(ap3);
+
+  var n1 = ad1 * 0.2 + ap1 * 0.8;
+  var n2 = ad2 * 0.2 + ap2 * 0.8;
+  var n = (n1 + n2) / 2;
+  var nf = n >= 6 ? n : (Math.max(n1, n2) + ap3) / 2;
+
+  // Ajuste nos cálculos de aprovação
+  var ap1Aprovacao = ad1 ? Math.ceil((6 - ad1 * 0.2) / 0.8 * 10) / 10 : null;
+  var ap2Aprovacao = ad1 && ap1 && ad2 ? Math.ceil((12 - n1 - ad2 * 0.2) / 0.8 * 10) / 10 : null;
+  var ap3Aprovacao = n < 6 ? Math.ceil((10 - Math.max(n1, n2)) * 10) / 10 : null;
+
+  var situacao = '';
+  if (n >= 6) {
+    situacao = 'APROVADO';
+  } else if (n < 6 && ap3 === 0) {
+    situacao = 'FAZER AP3';
+  } else if (n < 6 && ap3 > 0) {
+    if (nf >= 5) {
+      situacao = 'APROVADO';
+    } else {
+      situacao = 'REPROVADO';
+    }
+  }
+
+  function updateUI(result) {
+  
+    var situacaoElement = document.getElementById('situacao');
+  situacaoElement.value = result.situacao;
+  
+  if (result.situacao === 'APROVADO') {
+    situacaoElement.className = 'output blue';
+  } else if (result.situacao === 'FAZER AP3') {
+    situacaoElement.className = 'output orange';
+  } else if (result.situacao === 'REPROVADO') {
+    situacaoElement.className = 'output red';
+  }
+
+  situacaoElement.style.fontWeight = 'bold';
+}
+  
+  return {
+    n1: roundToOne(n1).toFixed(1),
+    n2: roundToOne(n2).toFixed(1),
+    n: roundToOne(n).toFixed(1),
+    nf: roundToOne(nf).toFixed(1),
+    ap1Aprovacao: ap1Aprovacao !== null ? ap1Aprovacao.toFixed(1) : '',
+    ap2Aprovacao: ap2Aprovacao !== null ? ap2Aprovacao.toFixed(1) : '',
+    ap3Aprovacao: ap3Aprovacao !== null ? ap3Aprovacao.toFixed(1) : 'Não precisa :)',
+    situacao: situacao
+  };
+}
